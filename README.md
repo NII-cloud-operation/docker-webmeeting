@@ -196,6 +196,8 @@ The ACME account and the certificates are stored in ACME_STATE_DIR (default: /va
 
 tests/e2e holds the end-to-end tests as Jupyter notebooks. Each step describes the operation and its expectation in Markdown, and drives Chromium with Playwright in the code cell. GitHub Actions runs them against the images on Docker Hub.
 
+The browsers in the meeting test do not use UDP, so the media goes through TURN-TLS on port 443 as for the clients outside the server. TURN-TLS verifies the certificate, so tests/e2e/scripts/trust-ca.sh adds the certificate authority of the tests to the NSS database that Chromium trusts.
+
 The Playwright helpers ( tests/e2e/notebooks/scripts/playwright.py ) are taken from [RCOSDP/RDM-e2e-test-nb](https://github.com/RCOSDP/RDM-e2e-test-nb), the notebook-based integration tests of GakuNin RDM (GRDM).
 
 # About Internals

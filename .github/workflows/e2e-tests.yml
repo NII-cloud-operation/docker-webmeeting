@@ -51,6 +51,12 @@ jobs:
           cp tests/e2e/e2e.env override.env
           tests/e2e/scripts/create-cert.sh
 
+      - name: Trust the certificate authority in Chromium
+        run: |
+          set -euxo pipefail
+          sudo apt-get install -y libnss3-tools
+          tests/e2e/scripts/trust-ca.sh
+
       - name: Start services
         run: |
           set -euxo pipefail
