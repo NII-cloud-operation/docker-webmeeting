@@ -1,0 +1,109 @@
+# docker-compose file for starting all services
+volumes:
+  postgres_data_vol:
+    external: false
+
+networks:
+  webmeeting-backend:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.128.128.0/24
+          gateway: 10.128.128.1
+
+services:
+  app-backend:
+    image: niicloudoperation/webmeeting-app:${WEBMEETING_IMAGE_TAG:-latest}
+    command:
+      - java
+      - -jar
+      - -Djava.security.egd=file:/dev/./urandom
+      - /app/demo.jar
+    depends_on:
+      - postgresql
+    env_file:
+      - path: ./default.env
+        required: true # default
+      - path: ./override.env
+        required: false
+    restart: always
+    networks:
+      - webmeeting-backend
+
+  app:
+    image: nginx:latest
+    volumes:
+      - ./conf/nginx.app.conf.template:/etc/nginx/templates/nginx.app.conf.template:ro
+    depends_on:
+      - app-backend
+    env_file:
+      - path: ./default.env
+        required: true # default
+      - path: ./override.env
+        required: false
+    restart: always
+    networks:
+      - webmeeting-backend
+
+  postgresql:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: webmeeting
+      POSTGRES_USER: ${DB_USERNAME:?Set DB_USERNAME in default.env or override.env}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in default.env or override.env}
+    volumes:
+      - postgres_data_vol:/var/lib/postgresql/data/
+    restart: always
+    networks:
+      - webmeeting-backend
+
+  sfu-backend:
+    image: niicloudoperation/webmeeting-sfu:${WEBMEETING_IMAGE_TAG:-latest}
+    command:
+      - /bin/sh
+      - -c
+      - jinja2 --strict /tmp/sfu.properties.j2 > /app/sfu.properties && /app/bin/sfu
+    volumes:
+      - ./conf/sfu.properties.j2:/tmp/sfu.properties.j2:ro
+    env_file:
+      - path: ./default.env
+        required: true # default
+      - path: ./override.env
+        required: false
+    restart: always
+    networks:
+      - webmeeting-backend
+
+  sfu:
+    image: nginx:latest
+    volumes:
+      - ./conf/nginx.sfu.conf.template:/etc/nginx/templates/nginx.sfu.conf.template:ro
+    depends_on:
+      - sfu-backend
+    env_file:
+      - path: ./default.env
+        required: true # default
+      - path: ./override.env
+        required: false
+    restart: always
+    networks:
+      - webmeeting-backend
+
+  https-proxy:
+    image: nginx:latest
+    volumes:
+      - ./conf/nginx.all.conf.stream-template:/etc/nginx/templates/nginx.all.conf.stream-template:ro
+      #- ./cert:/etc/nginx/cert:ro
+    depends_on:
+      - app
+      - sfu
+    ports:
+      - 443:443
+    env_file:
+      - path: ./default.env
+        required: true # default
+      - path: ./override.env
+        required: false
+    restart: always
+    networks:
+      - webmeeting-backend

@@ -1,0 +1,34 @@
+# docker-compose file for Let's Encrypt certbot support
+# Usage: docker-compose -f docker-compose.yml -f docker-compose.certbot.yml up
+
+volumes:
+  certbot_data:
+    external: false
+  certbot_www:
+    external: false
+
+services:
+  # Override https-proxy to add certbot volume mounts and HTTP port
+  https-proxy:
+    volumes:
+      - ./conf/nginx.all.conf.stream-certbot-template:/etc/nginx/templates/nginx.all.conf.stream-template:ro
+      - ./conf/nginx.https-proxy.http.conf.template:/etc/nginx/templates/nginx.https-proxy.http.conf.template:ro
+      - certbot_data:/etc/letsencrypt:ro
+      - certbot_www:/var/www/certbot:ro
+    ports:
+      - 80:80
+    restart: always
+
+  certbot:
+    image: certbot/certbot:latest
+    env_file:
+      - default.env
+      - path: override.env
+        required: false
+    volumes:
+      - certbot_data:/etc/letsencrypt
+      - certbot_www:/var/www/certbot
+      - ./scripts/certbot-all.sh:/scripts/certbot-all.sh:ro
+      - ./scripts/fix-cert-permissions.sh:/scripts/fix-cert-permissions.sh:ro
+    entrypoint: ["/bin/sh", "/scripts/certbot-all.sh"]
+    restart: always

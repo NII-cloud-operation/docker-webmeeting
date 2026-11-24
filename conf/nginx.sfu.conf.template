@@ -1,0 +1,97 @@
+server {
+  listen 80 default_server;
+  listen [::]:80;
+  server_name ${SFU_FQDN};
+
+  proxy_connect_timeout                   60;
+  proxy_read_timeout                      5m;
+  proxy_send_timeout                      5m;
+  proxy_redirect                          off;
+
+  proxy_set_header Host                   $host;
+  proxy_set_header X-Real-IP              $remote_addr;
+  proxy_set_header X-Forwarded-Host       $host;
+  proxy_set_header X-Forwarded-Server     $host;
+  proxy_set_header X-Forwarded-For        $proxy_add_x_forwarded_for;
+  #proxy_set_header X-Forwarded-Proto     $http_x_forwarded_proto;
+
+  location = /favicon.ico {
+    access_log off;
+    empty_gif;
+  }
+
+  location /api {
+      allow ${APP_IP_RANGE};
+      proxy_pass http://sfu-backend:3000/;
+      deny all;
+  }
+
+  location / {
+    access_log off;
+    return 302 https://$host$request_uri;
+  }
+}
+
+server {
+  listen 80;
+  listen [::]:80;
+  server_name ${TURN_FQDN};
+
+  proxy_connect_timeout                   60;
+  proxy_read_timeout                      5m;
+  proxy_send_timeout                      5m;
+  proxy_redirect                          off;
+
+  proxy_set_header Host                   $host;
+  proxy_set_header X-Real-IP              $remote_addr;
+  proxy_set_header X-Forwarded-Host       $host;
+  proxy_set_header X-Forwarded-Server     $host;
+  proxy_set_header X-Forwarded-For        $proxy_add_x_forwarded_for;
+  #proxy_set_header X-Forwarded-Proto     $http_x_forwarded_proto;
+
+  location = /favicon.ico {
+    access_log off;
+    empty_gif;
+  }
+
+  location / {
+    access_log off;
+    return 302 https://$host$request_uri;
+  }
+}
+
+server {
+  listen 8080;
+  listen [::]:8080;
+  server_name ${SFU_FQDN};
+
+  proxy_connect_timeout   60;
+  proxy_read_timeout      5m;
+  proxy_send_timeout      5m;
+  access_log  /var/log/nginx/sfu.log main;
+
+  real_ip_header X-Forwarded-For;
+  real_ip_recursive on;
+
+  proxy_set_header X-Real-IP           $remote_addr;
+  proxy_set_header X-Forwarded-Proto   https;
+  proxy_set_header X-Forwarded-For     $proxy_add_x_forwarded_for;
+  proxy_set_header Host           $http_host;
+
+  location = /favicon.ico {
+    access_log off;
+    empty_gif;
+  }
+
+  location /signaling {
+    proxy_pass http://sfu-backend:5000;
+    proxy_request_buffering off;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+  }
+  
+  location / {
+    return 403;
+  }
+}

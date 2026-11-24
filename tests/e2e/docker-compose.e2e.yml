@@ -1,0 +1,4 @@
+services:
+  https-proxy:
+    volumes:
+      - ./tests/e2e/cert:/etc/nginx/cert:ro

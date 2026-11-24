@@ -1,0 +1,10 @@
+# UPKI profile for docker-compose.acme*.yml.
+# Each certificate role uses an independently issued EAB Credential.
+
+services:
+  acme-init:
+    environment:
+      ACME_DIRECTORY: https://secomtrust-acme.com/acme/
+      ACME_EAB_REQUIRED: "true"
+    volumes:
+      - ${UPKI_ACME_EAB_DIR:?Set UPKI_ACME_EAB_DIR in default.env or override.env}:/run/secrets/acme-eab:ro

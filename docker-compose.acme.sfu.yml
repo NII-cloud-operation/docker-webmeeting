@@ -1,0 +1,71 @@
+# ACME certificate automation for the SFU-only deployment.
+# Usage: docker compose --env-file default.env --env-file override.env -f docker-compose.sfu.yml -f docker-compose.acme.sfu.yml up -d
+
+volumes:
+  acme_challenges:
+    external: false
+
+services:
+  acme-http:
+    image: nginx:stable
+    volumes:
+      - ./conf/nginx.acme-http.conf:/etc/nginx/conf.d/default.conf:ro
+      - acme_challenges:/var/www/acme:ro
+    ports:
+      - 80:80
+    healthcheck:
+      test: ["CMD-SHELL", "test -s /var/run/nginx.pid"]
+      interval: 2s
+      timeout: 2s
+      retries: 15
+    restart: always
+
+  https-proxy:
+    image: nginx:stable
+    volumes:
+      - ./conf/nginx.sfu-only.conf.stream-acme-template:/etc/nginx/templates/nginx.sfu-only.conf.stream-template:ro
+      - ${ACME_STATE_DIR:?Set ACME_STATE_DIR in default.env or override.env}:/var/lib/acme:ro
+    depends_on:
+      acme-init:
+        condition: service_completed_successfully
+    restart: always
+
+  acme-init:
+    image: certbot/certbot:latest
+    env_file:
+      - path: ./default.env
+        required: true
+      - path: ./override.env
+        required: false
+    environment:
+      ACME_CERTIFICATE_ROLES: sfu turn
+    volumes:
+      - ${ACME_STATE_DIR:?Set ACME_STATE_DIR in default.env or override.env}:/var/lib/acme
+      - acme_challenges:/var/www/acme
+      - ./scripts/acme-certbot.sh:/scripts/acme-certbot.sh:ro
+    depends_on:
+      acme-http:
+        condition: service_healthy
+    entrypoint: ["/bin/sh", "/scripts/acme-certbot.sh"]
+    command: ["init"]
+    restart: "no"
+
+  acme-renew:
+    image: certbot/certbot:latest
+    env_file:
+      - path: ./default.env
+        required: true
+      - path: ./override.env
+        required: false
+    environment:
+      ACME_CERTIFICATE_ROLES: sfu turn
+    volumes:
+      - ${ACME_STATE_DIR:?Set ACME_STATE_DIR in default.env or override.env}:/var/lib/acme
+      - acme_challenges:/var/www/acme
+      - ./scripts/acme-certbot.sh:/scripts/acme-certbot.sh:ro
+    depends_on:
+      acme-init:
+        condition: service_completed_successfully
+    entrypoint: ["/bin/sh", "/scripts/acme-certbot.sh"]
+    command: ["renew-loop"]
+    restart: always

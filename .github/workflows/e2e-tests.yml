@@ -1,0 +1,90 @@
+name: E2E Tests
+
+on:
+  push:
+    branches:
+      - '**'
+  pull_request:
+    branches:
+      - '**'
+  workflow_dispatch:
+
+env:
+  COMPOSE_ARGS: --env-file default.env --env-file override.env -f docker-compose.yml -f tests/e2e/docker-compose.e2e.yml
+
+jobs:
+  notebook-e2e:
+    name: E2E Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+
+      - name: Cache pip dependencies
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('tests/e2e/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install Python dependencies
+        run: |
+          set -euxo pipefail
+          pip install --upgrade pip
+          pip install -r tests/e2e/requirements.txt
+
+      - name: Install Playwright browsers
+        run: |
+          set -euxo pipefail
+          python -m playwright install --with-deps chromium
+
+      - name: Prepare settings and certificate
+        run: |
+          set -euxo pipefail
+          cp tests/e2e/e2e.env override.env
+          tests/e2e/scripts/create-cert.sh
+
+      - name: Start services
+        run: |
+          set -euxo pipefail
+          docker compose $COMPOSE_ARGS up -d
+
+      - name: Wait for services
+        run: |
+          set -euxo pipefail
+          tests/e2e/scripts/wait-for-services.sh
+
+      - name: Run notebook E2E tests
+        env:
+          E2E_TRANSITION_TIMEOUT: '30000'
+        run: |
+          set -euxo pipefail
+          python tests/e2e/run_notebooks.py
+
+      - name: Gather Docker logs
+        if: always()
+        run: |
+          set -euxo pipefail
+          mkdir -p tests/e2e/artifacts
+          docker compose $COMPOSE_ARGS logs --no-color > tests/e2e/artifacts/docker-compose.log
+
+      - name: Upload artifacts
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: e2e-results
+          path: |
+            tests/e2e/artifacts
+
+      - name: Shutdown services
+        if: always()
+        run: |
+          set -euxo pipefail
+          docker compose $COMPOSE_ARGS down -v

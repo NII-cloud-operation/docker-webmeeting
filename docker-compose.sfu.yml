@@ -1,0 +1,45 @@
+# docker-compose file for starting only sfu services
+services:
+  sfu-backend:
+    image: niicloudoperation/webmeeting-sfu:${WEBMEETING_IMAGE_TAG:-latest}
+    command:
+      - /bin/sh
+      - -c
+      - jinja2 --strict /tmp/sfu.properties.j2 > /app/sfu.properties && /app/bin/sfu
+    volumes:
+      - ./conf/sfu.properties.j2:/tmp/sfu.properties.j2:ro
+    env_file:
+      - path: ./default.env
+        required: true # default
+      - path: ./override.env
+        required: false
+    restart: always
+
+  sfu:
+    image: nginx:latest
+    volumes:
+      - ./conf/nginx.sfu.conf.template:/etc/nginx/templates/nginx.sfu.conf.template:ro
+    depends_on:
+      - sfu-backend
+    env_file:
+      - path: ./default.env
+        required: true # default
+      - path: ./override.env
+        required: false
+    restart: always
+
+  https-proxy:
+    image: nginx:latest
+    volumes:
+      - ./conf/nginx.sfu-only.conf.stream-template:/etc/nginx/templates/nginx.sfu-only.conf.stream-template:ro
+      #- ./cert:/etc/nginx/cert:ro
+    depends_on:
+      - sfu
+    ports:
+      - 443:443
+    env_file:
+      - path: ./default.env
+        required: true # default
+      - path: ./override.env
+        required: false
+    restart: always

@@ -1,0 +1,31 @@
+upstream ${TURN_FQDN} {
+    server sfu-backend:3478;
+}
+
+upstream ${SFU_FQDN} {
+    server sfu:8080;
+}
+
+map $ssl_server_name $cert_role {
+    ${SFU_FQDN} sfu;
+    ${TURN_FQDN} turn;
+    default sfu;
+}
+
+server {
+  listen 443 ssl;
+  proxy_pass $ssl_server_name;
+
+  ssl_certificate /var/lib/acme/${ACME_STATE_NAME}/certificates/$cert_role/fullchain.pem;
+  ssl_certificate_key /var/lib/acme/${ACME_STATE_NAME}/certificates/$cert_role/privkey.pem;
+  ssl_certificate_cache max=20 inactive=10m valid=1m;
+  ssl_protocols TLSv1.2 TLSv1.3;
+  ssl_prefer_server_ciphers on;
+  ssl_ciphers ECDHE-RSA-AES256-GCM-SHA512:DHE-RSA-AES256-GCM-SHA512:ECDHE-RSA-AES256-GCM-SHA384:DHE-RSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-SHA384;
+
+  ssl_handshake_timeout 10s;
+
+  ssl_session_timeout 10m;
+  ssl_session_cache shared:SSL:10m;
+  ssl_session_tickets off;
+}

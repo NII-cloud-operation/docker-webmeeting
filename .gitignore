@@ -1,0 +1,11 @@
+docker-compose.override.yml
+docker-compose.app.override.yml
+docker-compose.sfu.override.yml
+
+override.env
+.env
+
+.DS_Store
+
+tests/e2e/artifacts/
+tests/e2e/cert/

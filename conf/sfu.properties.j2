@@ -1,0 +1,112 @@
+# The value specific to the server, sent with the authentication and event webhooks
+# Not implemented
+# label = [your_sfu_label]
+
+# The address fixed to the server
+# Collected automatically when not set
+# ipv4_address =
+
+# Enables the demo feature
+# Not implemented
+# demo = false
+
+# The destination of the authentication webhook
+auth_webhook_url = http://{{ environ('APP_INTERNAL_HOSTNAME') or APP_INTERNAL_HOSTNAME }}/sora/webhook/auth
+
+# Whether to write the authentication webhook to the log
+# Not implemented
+# auth_webhook_log = true
+
+# The destination of the event webhook
+event_webhook_url = http://{{ environ('APP_INTERNAL_HOSTNAME') or APP_INTERNAL_HOSTNAME }}/sora/webhook/event
+
+# The response timeout of the webhooks
+# Not implemented
+# webhook_response_timeout = 5 s
+
+# The port of the signaling
+# default: 5000
+signaling_port = 5000
+
+# Whether to limit the access to the signaling to the loopback address
+# Not implemented
+# signaling_loopback_address_only = false
+
+# The port of the API
+api_port = 3000
+
+# Whether to limit the access to the API to the loopback address
+# Not implemented
+# api_loopback_address_only = false
+
+# The CORS origin in the headers of the API
+# Not implemented
+# api_cors_origin = 
+
+# The minimum of the port range of the SFU
+# Must not overlap the port range of TURN
+sfu_port_range_min = 46884
+
+# The maximum of the port range of the SFU
+# Must not overlap the port range of TURN
+sfu_port_range_max = 60999
+
+# Enables TURN
+turn = true
+
+# The realm of TURN
+turn_realm = {{ environ('TURN_FQDN') or TURN_FQDN }}
+
+# The port of TURN
+turn_listen_port = 3478
+
+# The minimum of the port range of TURN
+# Must not overlap the port range of the SFU
+turn_port_range_min = 32768
+
+# The maximum of the port range of TURN
+# Must not overlap the port range of the SFU
+turn_port_range_max = 46883
+
+# Whether to use TURN-TCP
+turn_tcp = false
+
+# The port of TURN-TCP
+turn_tcp_listen_port = 3478
+
+# The FQDN of TURN TLS
+turn_tls_fqdn = {{ environ('TURN_FQDN') or TURN_FQDN }}
+
+# The port in the TURN-TCP URLs given to the clients
+# turn_tcp_listen_port when not set
+# turn_tcp_port = 
+
+# Limits to TURN-TCP only
+# For testing only
+turn_tcp_only = false
+
+# Whether to give the TURN-TLS URLs to the clients
+turn_tls = true
+
+# The port in the TURN-TLS URLs given to the clients
+turn_tls_port = 443
+
+# Limits to TURN-TLS only
+# For testing only
+turn_tls_only = false
+
+# The default video bit rate
+# default_video_bit_rate = 500
+
+# The time allowed to establish the WebRTC connection between the SFU and a client
+# Not implemented
+# connection_created_wait_timeout = 30 s
+
+# The rid of the focused streams in the spotlight feature
+default_spotlight_focus_rid = none
+
+# The rid of the unfocused streams in the spotlight feature
+default_spotlight_unfocus_rid = none
+
+# The maximum number of unfocused streams whose audio is delivered in the spotlight feature
+default_spotlight_unfocus_audio_rate_limit = 3

@@ -1,0 +1,36 @@
+upstream ${TURN_FQDN} {
+    server sfu-backend:3478;
+}
+
+upstream ${SFU_FQDN} {
+    server sfu:8080;
+}
+
+upstream ${APP_FQDN} {
+    server app:80;
+}
+
+upstream ${ADMIN_SUBDOMAIN}.${APP_FQDN} {
+    server app:80;
+}
+
+# TODO Applying wildcard domain
+upstream ${SAMPLE_TENANT_SUBDOMAIN}.${APP_FQDN} {
+    server app:80;
+}
+
+server {
+  listen 443 ssl;
+  proxy_pass $ssl_server_name;
+
+  ssl_certificate ${CERT_PATH};
+  ssl_certificate_key ${KEY_PATH};
+  ssl_protocols TLSv1.2;
+  ssl_prefer_server_ciphers on;
+  ssl_ciphers 'ECDHE-RSA:ECDHE-ECDSA-AES-GCM:HIGH:!aNULL:!eNULL:!EXPORT:!DES:!RC4:!PSK:!ADH:!MD5';
+
+  ssl_handshake_timeout 10s;
+
+  ssl_session_cache off;
+  ssl_session_tickets off;
+}
